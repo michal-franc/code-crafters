@@ -1,10 +1,10 @@
 default: run-resolver
 
 build:
-	go build -o server app/*.go
+	go build -o ./bin/server app/*.go
 
 run: build
-	sudo ./server
+	sudo ./bin/server
 
 run-resolver: build
-	sudo ./server --resolver 8.8.8.8:53
+	sudo ./bin/server --resolver 8.8.8.8:53
