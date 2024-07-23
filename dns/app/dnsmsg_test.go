@@ -127,7 +127,8 @@ func TestDecodeDNSMessage(t *testing.T) {
 		fmt.Println("Failed to encode response:", err)
 	}
 
-	result, err := decodeMessage(testMessageEncoded)
+	result := DNSMessage{}
+	err = result.Decode(testMessageEncoded)
 	if err != nil {
 		t.Error("failed to decode the message:", err)
 	}

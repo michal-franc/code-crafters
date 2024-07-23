@@ -61,8 +61,8 @@ func main() {
 
 		fmt.Printf("Received %d bytes from %s\n", size, source)
 
-		receivedMessage, err := decodeMessage(buf[:size])
-
+		receivedMessage := DNSMessage{}
+		err = receivedMessage.Decode(buf[:size])
 		if err != nil {
 			fmt.Println("couldnt decode message:", err)
 		}
@@ -124,12 +124,13 @@ func main() {
 
 				fmt.Printf("Received %d bytes", sizeRes)
 
-				responseResolver, err := decodeMessage(buf[:sizeRes])
+				responseFromeResolver := DNSMessage{}
+				err = responseFromeResolver.Decode(buf[:sizeRes])
 				if err != nil {
 					fmt.Println("failure on decoding response from resolver: ", err)
 				}
 
-				for _, answerReceived := range responseResolver.Answers {
+				for _, answerReceived := range responseFromeResolver.Answers {
 					answers = append(answers, answerReceived)
 				}
 			}

@@ -15,16 +15,16 @@ type DNSMessage struct {
 	Answers   []DNSAnswer
 }
 
-func (msg *DNSMessage) encode() ([]byte, error) {
+func (message *DNSMessage) encode() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
-	encodedHeader, err := msg.Header.Encode()
+	encodedHeader, err := message.Header.Encode()
 	if err != nil {
 		return nil, err
 	}
 	buf.Write(encodedHeader)
 
-	for _, question := range msg.Questions {
+	for _, question := range message.Questions {
 		encodedQuestion, err := question.Encode()
 		if err != nil {
 			return nil, err
@@ -32,7 +32,7 @@ func (msg *DNSMessage) encode() ([]byte, error) {
 		buf.Write(encodedQuestion)
 	}
 
-	for _, answer := range msg.Answers {
+	for _, answer := range message.Answers {
 		encodedAnswer, err := answer.Encode()
 		if err != nil {
 			return nil, err
@@ -43,18 +43,15 @@ func (msg *DNSMessage) encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// TODO: move to a method for struct
-func decodeMessage(messageBytes []byte) (DNSMessage, error) {
+func (message *DNSMessage) Decode(messageBytes []byte) error {
 
-	message := DNSMessage{
-		Header:    DNSHeader{},
-		Questions: []DNSQuestion{},
-		Answers:   []DNSAnswer{},
-	}
+	message.Header = DNSHeader{}
+	message.Questions = []DNSQuestion{}
+	message.Answers = []DNSAnswer{}
 
 	err := message.Header.Decode(messageBytes)
 	if err != nil {
-		return DNSMessage{}, err
+		return err
 	}
 
 	// 12 is start of question section
@@ -71,7 +68,7 @@ func decodeMessage(messageBytes []byte) (DNSMessage, error) {
 		message.Answers = append(message.Answers, answer)
 	}
 
-	return message, nil
+	return nil
 }
 
 // in the rfc - https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4
