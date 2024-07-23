@@ -7,26 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// given struct of dns msg
-// create a binary representation used by dns
-func TestHeaderEncoding(t *testing.T) {
-
-	testMessage := DNSMessage{
-		Header: DNSHeader{
-			ID: 1234,
-		},
-	}
-
-	encodedMessage, err := testMessage.encode()
-
-	if err != nil {
-		t.Error("Error while encoding DNS", err)
-	}
-
-	// example from code crafters
-	assert.Equal(t, encodedMessage[0:12], []byte{4, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-}
-
 func TestQuestionNameEncoder(t *testing.T) {
 	given := "google.com"
 	expected := "\x06google\x03com\x00"

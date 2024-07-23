@@ -15,14 +15,6 @@ type DNSMessage struct {
 	Answers   []DNSAnswer
 }
 
-type DNSHeader struct {
-	ID      uint16
-	FLAGS   Flags
-	QDCOUNT uint16
-	ANCOUNT uint16
-	NSCOUNT uint16
-	ARCOUNT uint16
-}
 type DNSQuestion struct {
 	Name  []byte
 	Type  uint16
@@ -41,9 +33,11 @@ type DNSAnswer struct {
 func (msg *DNSMessage) encode() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
-	if err := binary.Write(buf, binary.BigEndian, msg.Header); err != nil {
+	encodedHeader, err := msg.Header.Encode()
+	if err != nil {
 		return nil, err
 	}
+	buf.Write(encodedHeader)
 
 	for _, question := range msg.Questions {
 		buf.Write(question.Name)
