@@ -146,19 +146,19 @@ func main() {
 				Answers:   answers,
 			}
 
-			responseMessage.Header.SetQR(true)
-			err = responseMessage.Header.SetOpCode(receivedMessage.Header.GetOpCode())
+			responseMessage.Header.FLAGS.SetQR(true)
+			err = responseMessage.Header.FLAGS.SetOpCode(receivedMessage.Header.FLAGS.GetOpCode())
 			if err != nil {
 				fmt.Println("Failed to set opcode:", err)
 			}
 
-			responseMessage.Header.SetRD(receivedMessage.Header.GetRD())
+			responseMessage.Header.FLAGS.SetRD(receivedMessage.Header.FLAGS.GetRD())
 
-			if receivedMessage.Header.GetOpCode() == 0 {
-				err = responseMessage.Header.SetRcode(0)
+			if receivedMessage.Header.FLAGS.GetOpCode() == 0 {
+				err = responseMessage.Header.FLAGS.SetRcode(0)
 			} else {
 
-				err = responseMessage.Header.SetRcode(4)
+				err = responseMessage.Header.FLAGS.SetRcode(4)
 			}
 
 			if err != nil {

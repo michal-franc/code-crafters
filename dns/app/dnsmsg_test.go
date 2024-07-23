@@ -27,33 +27,6 @@ func TestHeaderEncoding(t *testing.T) {
 	assert.Equal(t, encodedMessage[0:12], []byte{4, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 }
 
-func TestHasBit(t *testing.T) {
-
-	assertHelper := func(value uint16, bitNumber uint, expected bool) {
-		assert.Equal(t, expected, hasBit(value, bitNumber), "Expected %d to have bit %d %t - binary representation %b", value, bitNumber, expected, value)
-	}
-
-	assertHelper(8, 3, true)
-	assertHelper(10, 1, true)
-	assertHelper(64, 6, true)
-
-	assertHelper(8, 1, false)
-	assertHelper(9, 4, false)
-}
-
-func TestSetBit(t *testing.T) {
-
-	assertHelper := func(value uint16, bitNumber uint, expected uint16) {
-		actual := setBit(value, bitNumber)
-		assert.Equal(t, expected, actual, "Expected %d to be equal %d after setting bit %d - binary representation expected: %b actual: %b", value, expected, bitNumber, expected, actual)
-	}
-
-	assertHelper(0, 3, 8)
-	assertHelper(8, 3, 8)
-	assertHelper(0, 1, 2)
-	assertHelper(0, 0, 1)
-}
-
 func TestBoolToIntFalse(t *testing.T) {
 	given := false
 	when := boolToUint8(given)
@@ -117,59 +90,6 @@ func TestAnswerIpEncoder(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestHeaderSetQR(t *testing.T) {
-	testHeader := DNSHeader{}
-
-	assert.False(t, testHeader.GetQR())
-
-	testHeader.SetQR(true)
-
-	assert.True(t, testHeader.GetQR())
-}
-
-func TestHeaderSetRD(t *testing.T) {
-	testHeader := DNSHeader{}
-
-	assert.False(t, testHeader.GetRD())
-
-	testHeader.SetRD(true)
-
-	assert.True(t, testHeader.GetRD())
-}
-
-func TestHeaderSetAA(t *testing.T) {
-	testHeader := DNSHeader{}
-
-	assert.False(t, testHeader.GetAA())
-	testHeader.SetAA(true)
-	assert.True(t, testHeader.GetAA())
-}
-
-func TestHeaderSetTC(t *testing.T) {
-	testHeader := DNSHeader{}
-
-	assert.False(t, testHeader.GetTC())
-	testHeader.SetTC(true)
-	assert.True(t, testHeader.GetTC())
-}
-
-func TestHeaderSetOpCode(t *testing.T) {
-	testHeader := DNSHeader{}
-
-	assert.Equal(t, uint16(0), testHeader.GetOpCode())
-	err := testHeader.SetOpCode(1)
-	assert.NoError(t, err)
-
-	assert.Equal(t, uint16(1), testHeader.GetOpCode())
-	err = testHeader.SetOpCode(15)
-	assert.NoError(t, err)
-
-	assert.Equal(t, uint16(15), testHeader.GetOpCode())
-
-	err = testHeader.SetOpCode(16)
-	assert.Error(t, err)
-}
-
 func TestDecodeDNSMessage(t *testing.T) {
 
 	nameEncoded := nameEncoder("google.com")
@@ -217,19 +137,19 @@ func TestDecodeDNSMessage(t *testing.T) {
 		},
 	}
 
-	testMessage.Header.SetQR(true)
-	testMessage.Header.SetAA(true)
-	testMessage.Header.SetRD(true)
-	err = testMessage.Header.SetZ(7)
+	testMessage.Header.FLAGS.SetQR(true)
+	testMessage.Header.FLAGS.SetAA(true)
+	testMessage.Header.FLAGS.SetRD(true)
+	err = testMessage.Header.FLAGS.SetZ(7)
 	if err != nil {
 		t.Error("Error while setting Z", err)
 	}
-	err = testMessage.Header.SetRcode(15)
+	err = testMessage.Header.FLAGS.SetRcode(15)
 	if err != nil {
 		t.Error("Error while setting RCode", err)
 	}
-	testMessage.Header.SetRA(true)
-	err = testMessage.Header.SetOpCode(15)
+	testMessage.Header.FLAGS.SetRA(true)
+	err = testMessage.Header.FLAGS.SetOpCode(15)
 	if err != nil {
 		t.Error("Error while setting OPCode", err)
 	}

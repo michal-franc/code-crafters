@@ -17,7 +17,7 @@ type DNSMessage struct {
 
 type DNSHeader struct {
 	ID      uint16
-	FLAGS   uint16
+	FLAGS   Flags
 	QDCOUNT uint16
 	ANCOUNT uint16
 	NSCOUNT uint16
@@ -36,117 +36,6 @@ type DNSAnswer struct {
 	TTL    uint32
 	Length uint16
 	Data   []byte
-}
-
-func hasBit(n uint16, pos uint) bool {
-	mask := uint16(1 << pos)
-	val := n & mask
-	return val > 0
-}
-
-func setBit(n uint16, pos uint) uint16 {
-	mask := uint16(1 << pos)
-	n = n | mask
-	return n
-}
-
-func (h *DNSHeader) GetQR() bool {
-	return hasBit(h.FLAGS, 15)
-}
-
-func (h *DNSHeader) SetQR(value bool) {
-	if value {
-		h.FLAGS = setBit(h.FLAGS, 15)
-	}
-}
-
-func (h *DNSHeader) GetAA() bool {
-	return hasBit(h.FLAGS, 10)
-}
-
-func (h *DNSHeader) SetAA(value bool) {
-	if value {
-		h.FLAGS = setBit(h.FLAGS, 10)
-	}
-}
-
-func (h *DNSHeader) GetTC() bool {
-	return hasBit(h.FLAGS, 9)
-}
-
-func (h *DNSHeader) SetTC(value bool) {
-	if value {
-		h.FLAGS = setBit(h.FLAGS, 9)
-	}
-}
-
-func (h *DNSHeader) GetRD() bool {
-	return hasBit(h.FLAGS, 8)
-}
-
-func (h *DNSHeader) SetRD(value bool) {
-	if value {
-		h.FLAGS = setBit(h.FLAGS, 8)
-	}
-}
-
-func (h *DNSHeader) GetRA() bool {
-	return hasBit(h.FLAGS, 7)
-}
-
-func (h *DNSHeader) SetRA(value bool) {
-	if value {
-		h.FLAGS = setBit(h.FLAGS, 7)
-	}
-}
-
-func (h *DNSHeader) GetZ() uint16 {
-	mask := uint16(16 + 32 + 64)
-	return (h.FLAGS & mask) >> 4
-}
-
-func (h *DNSHeader) SetZ(value uint16) (err error) {
-	if value >= 8 {
-		return fmt.Errorf("invalid z value set - allowed 0 to 7: %d", value)
-	}
-	mask := value << 4 // shift to put correct value
-	h.FLAGS |= mask
-
-	return nil
-}
-
-func (h *DNSHeader) GetRcode() uint16 {
-	mask := uint16(1 + 2 + 4 + 8)
-	return h.FLAGS & mask
-}
-
-func (h *DNSHeader) SetRcode(value uint16) (err error) {
-	if value >= 16 {
-		return fmt.Errorf("invalid z value set - allowed 0 to 15: %d", value)
-	}
-	mask := value
-	h.FLAGS |= mask
-
-	return nil
-}
-
-func (h *DNSHeader) GetOpCode() uint16 {
-	// OpCode is positioned from 1 to 4th bit in the first byte
-	// apply mask 01111000 00000000 which takes 1 to 4 bits - BigEndian
-	mask := uint16(2048 + 4096 + 8192 + 16834)
-	// apply mask on the value to extract only the bits which are important
-	// shift right as the OpCode starts at 11
-	return (h.FLAGS & mask) >> 11
-}
-
-func (h *DNSHeader) SetOpCode(value uint16) (err error) {
-	if value >= 16 {
-		return fmt.Errorf("invalid opcode value set - allowed 0 to 15: %d", value)
-	}
-	mask := value << 11 // shift to put correct value
-	h.FLAGS |= mask
-
-	return nil
 }
 
 func (msg *DNSMessage) encode() ([]byte, error) {
