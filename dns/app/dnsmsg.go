@@ -15,21 +15,6 @@ type DNSMessage struct {
 	Answers   []DNSAnswer
 }
 
-type DNSQuestion struct {
-	Name  []byte
-	Type  uint16
-	Class uint16
-}
-
-type DNSAnswer struct {
-	Name   []byte
-	Type   uint16
-	Class  uint16
-	TTL    uint32
-	Length uint16
-	Data   []byte
-}
-
 func (msg *DNSMessage) encode() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
@@ -40,37 +25,25 @@ func (msg *DNSMessage) encode() ([]byte, error) {
 	buf.Write(encodedHeader)
 
 	for _, question := range msg.Questions {
-		buf.Write(question.Name)
-		if err := binary.Write(buf, binary.BigEndian, question.Type); err != nil {
+		encodedQuestion, err := question.Encode()
+		if err != nil {
 			return nil, err
 		}
-		if err := binary.Write(buf, binary.BigEndian, question.Class); err != nil {
-			return nil, err
-		}
+		buf.Write(encodedQuestion)
 	}
 
 	for _, answer := range msg.Answers {
-		buf.Write(answer.Name)
-		if err := binary.Write(buf, binary.BigEndian, answer.Type); err != nil {
+		encodedAnswer, err := answer.Encode()
+		if err != nil {
 			return nil, err
 		}
-		if err := binary.Write(buf, binary.BigEndian, answer.Class); err != nil {
-			return nil, err
-		}
-		if err := binary.Write(buf, binary.BigEndian, answer.TTL); err != nil {
-			return nil, err
-		}
-		if err := binary.Write(buf, binary.BigEndian, answer.Length); err != nil {
-			return nil, err
-		}
-		if err := binary.Write(buf, binary.BigEndian, answer.Data); err != nil {
-			return nil, err
-		}
+		buf.Write(encodedAnswer)
 	}
 
 	return buf.Bytes(), nil
 }
 
+// TODO: move to a method for struct
 func decodeMessage(messageBytes []byte) (DNSMessage, error) {
 
 	message := DNSMessage{
@@ -81,6 +54,7 @@ func decodeMessage(messageBytes []byte) (DNSMessage, error) {
 
 	headerBuffer := bytes.NewBuffer(messageBytes[0:12])
 
+	//TODO: move to Decode function in header
 	err := binary.Read(headerBuffer, binary.BigEndian, &message.Header)
 	if err != nil {
 		return DNSMessage{}, err
@@ -90,6 +64,7 @@ func decodeMessage(messageBytes []byte) (DNSMessage, error) {
 	offset := startOfQuestionSection
 
 	for range message.Header.QDCOUNT {
+		//TODO: move to Decode function in question
 		name, offsetName := nameExtract(messageBytes, startOfQuestionSection)
 		offset += offsetName
 		question := DNSQuestion{
@@ -112,6 +87,7 @@ func decodeMessage(messageBytes []byte) (DNSMessage, error) {
 	offset = startOfAnswerSection
 
 	for range message.Header.ANCOUNT {
+		//TODO: move to Decode function in Answer
 		name, offsetName := nameExtract(messageBytes, startOfAnswerSection)
 		offset += offsetName
 		answer := DNSAnswer{
@@ -168,6 +144,7 @@ func extractPointer(b []byte) int {
 // - byte representation of name
 // - offset by which one should shift the bytes
 
+// TODO: there has to be a better algorithm here
 func nameExtract(data []byte, startOffset int) ([]byte, int) {
 	// names are encoded by
 	// | length byte | x* bytes containg the characters each character byte |
@@ -218,22 +195,33 @@ func nameExtract(data []byte, startOffset int) ([]byte, int) {
 	return buf.Bytes(), lengthOfLabelSection
 }
 
+// split by .
+// then for each splitted item create encoded value and add to buf
+// encoded value example de => \x02de --- length 2 and then characters (or runes)
+// then emit buff adding \x00 at the end - this is to indicate the end of label - important for decoding!
+// TODO: add more tests also on boundaries
+// TODO: add logic to validate if the limits are met and kept in the boundaries
 func nameEncoder(name string) []byte {
-	// split by .
-	// then for each splitted item create encoded value and add to buf
-	// then emit buff adding \x00 at the end
 	buf := new(bytes.Buffer)
 	split := strings.Split(name, ".")
 	for _, v := range split {
 		length := len(v)
 
-		buf.WriteByte(uint8(length))
+		buf.WriteByte(uint8(length)) // uint8 is important here as the number  has to occupy 1 byte
 		buf.Write([]byte(v))
 	}
 	buf.WriteByte(0)
 	return buf.Bytes()
 }
 
+// split by .
+// then for each splitted item create encoded value and add to buf
+// example 8.8.8.8 -> 8888
+// we effectively just remove `dot`
+// but we cant just encode 8888 in byte it has be 8 8 8 8 each in 1 byte that is why simple algorithm to `remove .` won't work here
+
+// TODO: add more tests also on boundaries
+// TODO: add logic to validate the ip before encoding
 func ipEncoder(ip string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 
@@ -246,6 +234,7 @@ func ipEncoder(ip string) ([]byte, error) {
 			return nil, nil
 		}
 
+		// uint8 is important here as the value has to  fit into 1 byte
 		if err := binary.Write(buf, binary.BigEndian, uint8(value)); err != nil {
 			fmt.Println("ipEncoder failure when writing value to buffer")
 			return nil, err
