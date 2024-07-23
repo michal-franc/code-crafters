@@ -37,3 +37,26 @@ func (answer *DNSAnswer) Encode() ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
+func (answer *DNSAnswer) Decode(messageBytes []byte, offset int) int {
+	name, offsetName := nameExtract(messageBytes, offset)
+	offset += offsetName
+	answer.Name = name
+
+	answer.Type = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
+	offset += 2
+
+	answer.Class = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
+	offset += 2
+
+	answer.TTL = binary.BigEndian.Uint32(messageBytes[offset : offset+4])
+	offset += 4
+
+	answer.Length = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
+	offset += 2
+
+	answer.Data = messageBytes[offset : offset+4]
+	offset += 4
+
+	return offset
+}

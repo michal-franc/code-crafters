@@ -132,6 +132,7 @@ func TestDecodeDNSMessage(t *testing.T) {
 		t.Error("failed to decode the message:", err)
 	}
 
+	assert.Equal(t, testMessage.Header, result.Header)
 	assert.NotNil(t, result)
 	assert.Equal(t, 2, len(result.Answers))
 	assert.Equal(t, 2, len(result.Questions))

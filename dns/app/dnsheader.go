@@ -24,3 +24,14 @@ func (h *DNSHeader) Encode() ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
+func (h *DNSHeader) Decode(messageBytes []byte) error {
+	// header uses only first 12 bytes
+	headerBuffer := bytes.NewBuffer(messageBytes[0:12])
+	err := binary.Read(headerBuffer, binary.BigEndian, h)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

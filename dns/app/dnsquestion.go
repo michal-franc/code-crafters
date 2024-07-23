@@ -25,3 +25,17 @@ func (question *DNSQuestion) Encode() ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
+func (q *DNSQuestion) Decode(messageBytes []byte, offset int) int {
+	name, offsetName := nameExtract(messageBytes, offset)
+	offset += offsetName
+	q.Name = name
+
+	q.Type = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
+	offset += 2
+
+	q.Class = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
+	offset += 2
+
+	return offset
+}

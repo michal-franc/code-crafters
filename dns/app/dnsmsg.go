@@ -52,65 +52,23 @@ func decodeMessage(messageBytes []byte) (DNSMessage, error) {
 		Answers:   []DNSAnswer{},
 	}
 
-	headerBuffer := bytes.NewBuffer(messageBytes[0:12])
-
-	//TODO: move to Decode function in header
-	err := binary.Read(headerBuffer, binary.BigEndian, &message.Header)
+	err := message.Header.Decode(messageBytes)
 	if err != nil {
 		return DNSMessage{}, err
 	}
 
-	startOfQuestionSection := 12
-	offset := startOfQuestionSection
-
+	// 12 is start of question section
+	offset := 12
 	for range message.Header.QDCOUNT {
-		//TODO: move to Decode function in question
-		name, offsetName := nameExtract(messageBytes, startOfQuestionSection)
-		offset += offsetName
-		question := DNSQuestion{
-			Name: name,
-		}
-
-		question.Type = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
-		offset += 2
-
-		question.Class = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
-		offset += 2
-
+		question := DNSQuestion{}
+		offset = question.Decode(messageBytes, offset)
 		message.Questions = append(message.Questions, question)
-
-		// move to next question
-		startOfQuestionSection = offset
 	}
 
-	startOfAnswerSection := offset
-	offset = startOfAnswerSection
-
 	for range message.Header.ANCOUNT {
-		//TODO: move to Decode function in Answer
-		name, offsetName := nameExtract(messageBytes, startOfAnswerSection)
-		offset += offsetName
-		answer := DNSAnswer{
-			Name: name,
-		}
-
-		answer.Type = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
-		offset += 2
-
-		answer.Class = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
-		offset += 2
-
-		answer.TTL = binary.BigEndian.Uint32(messageBytes[offset : offset+4])
-		offset += 4
-
-		answer.Length = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
-		offset += 2
-
-		answer.Data = messageBytes[offset : offset+4]
-		offset += 4
-
+		answer := DNSAnswer{}
+		offset = answer.Decode(messageBytes, offset)
 		message.Answers = append(message.Answers, answer)
-		startOfAnswerSection = offset
 	}
 
 	return message, nil
