@@ -57,7 +57,7 @@ func TestDNSAnswerWithStaticVariablesEncode(t *testing.T) {
 		t.Error("Error while encoding DNS Message", err)
 	}
 
-	//Class  Occupieis 3rd and 4th byte
+	//Class Occupies 3rd and 4th byte
 	assert.Equal(t, answerEncoded, []byte{0, 0, 0, 1, 0, 0, 0, 0, 0, 0}, "Answer with class IN failed")
 }
 
@@ -75,7 +75,6 @@ func TestDNSAnswerWithNameEncoding(t *testing.T) {
 		t.Error("Error while encoding DNS Message", err)
 	}
 
-	// Type is first 2 byte sequence in answer without Name
 	// 1 is encoded as 0x01, and character 1 which is int("1"), and ending with 0x00
 	expectedNameEncoding := []byte{0x01, byte(int('1')), 0x00}
 	expectedNameEncoding = append(expectedNameEncoding, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}...) // ... here will change the array to single elements
