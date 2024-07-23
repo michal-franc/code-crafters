@@ -161,6 +161,8 @@ func extractPointer(b []byte) int {
 
 	// &^= does and not operation and will clear the bits that have 11
 	// this will set zero if both w and mask are 1 and otherwise use the w
+	// to remove pointer  indication and create a value from the rest of bits
+	// which is the actuall offset value
 	w &^= uint16(mask)
 
 	return int(w)
@@ -257,11 +259,4 @@ func ipEncoder(ip string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
-}
-
-func boolToUint8(b bool) uint8 {
-	if b {
-		return 1
-	}
-	return 0
 }

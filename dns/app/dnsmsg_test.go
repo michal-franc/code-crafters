@@ -27,18 +27,6 @@ func TestHeaderEncoding(t *testing.T) {
 	assert.Equal(t, encodedMessage[0:12], []byte{4, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 }
 
-func TestBoolToIntFalse(t *testing.T) {
-	given := false
-	when := boolToUint8(given)
-	assert.Equal(t, when, uint8(0))
-}
-
-func TestBoolToIntTrue(t *testing.T) {
-	given := true
-	when := boolToUint8(given)
-	assert.Equal(t, when, uint8(1))
-}
-
 func TestQuestionNameEncoder(t *testing.T) {
 	given := "google.com"
 	expected := "\x06google\x03com\x00"
