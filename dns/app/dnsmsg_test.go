@@ -27,6 +27,33 @@ func TestHeaderEncoding(t *testing.T) {
 	assert.Equal(t, encodedMessage[0:12], []byte{4, 210, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 }
 
+func TestHasBit(t *testing.T) {
+
+	assertHelper := func(value uint16, bitNumber uint, expected bool) {
+		assert.Equal(t, expected, hasBit(value, bitNumber), "Expected %d to have bit %d %t - binary representation %b", value, bitNumber, expected, value)
+	}
+
+	assertHelper(8, 3, true)
+	assertHelper(10, 1, true)
+	assertHelper(64, 6, true)
+
+	assertHelper(8, 1, false)
+	assertHelper(9, 4, false)
+}
+
+func TestSetBit(t *testing.T) {
+
+	assertHelper := func(value uint16, bitNumber uint, expected uint16) {
+		actual := setBit(value, bitNumber)
+		assert.Equal(t, expected, actual, "Expected %d to be equal %d after setting bit %d - binary representation expected: %b actual: %b", value, expected, bitNumber, expected, actual)
+	}
+
+	assertHelper(0, 3, 8)
+	assertHelper(8, 3, 8)
+	assertHelper(0, 1, 2)
+	assertHelper(0, 0, 1)
+}
+
 func TestBoolToIntFalse(t *testing.T) {
 	given := false
 	when := boolToUint8(given)
