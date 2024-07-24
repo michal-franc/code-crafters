@@ -76,18 +76,6 @@ func (message *DNSMessage) Decode(messageBytes []byte) error {
 	return nil
 }
 
-// in the rfc - https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4
-// if last two bits are 11 then its a pointer
-func doesWordHasAPointer(word []byte) (bool, error) {
-
-	if len(word) != 2 {
-		return false, fmt.Errorf("provided word is not 2 bytes in size unable to proceed")
-	}
-
-	w := binary.BigEndian.Uint16(word)
-	return hasBit(w, 15) && hasBit(w, 14), nil
-}
-
 func extractPointer(word []byte) (int, error) {
 
 	if len(word) != 2 {
@@ -96,16 +84,23 @@ func extractPointer(word []byte) (int, error) {
 
 	w := binary.BigEndian.Uint16(word)
 
-	// generates 1100 0000 0000 0000
-	mask := 11 << 14
+	// in the rfc - https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4
+	// if last two bits are 11 then its a pointer
+	if hasBit(w, 15) && hasBit(w, 14) {
+		// generates 1100 0000 0000 0000
+		mask := 11 << 14
 
-	// &^= does and not operation and will clear the bits that have 11
-	// this will set zero if both w and mask are 1 and otherwise use the w
-	// to remove pointer  indication and create a value from the rest of bits
-	// which is the actuall offset value
-	w &^= uint16(mask)
+		// &^= does and not operation and will clear the bits that have 11
+		// this will set zero if both w and mask are 1 and otherwise use the w
+		// to remove pointer  indication and create a value from the rest of bits
+		// which is the actuall offset value
+		w &^= uint16(mask)
 
-	return int(w), nil
+		return int(w), nil
+	} else {
+		// this was not a pointer
+		return -1, nil
+	}
 }
 
 // Will find a name in the byte array
@@ -124,19 +119,14 @@ func nameExtract(data []byte, startOffset int) ([]byte, int, error) {
 
 	for {
 		word := data[offset : offset+2]
-		isPointer, err := doesWordHasAPointer(word)
+		pointer, err := extractPointer(word)
 		if err != nil {
 			return nil, 0, fmt.Errorf("name extraction failed: %e", err)
 		}
 
-		if isPointer {
+		if pointer != -1 {
+			// everything up to the pointer is start of the message so we need to write it
 			buf.Write(data[startOffset:offset])
-			// by rfc the pointer is a 16 bit word (2 bytes)
-			pointer, err := extractPointer(word)
-			if err != nil {
-				return nil, 0, fmt.Errorf("name extraction failed: %e", err)
-			}
-
 			lengthOfLabelSection = (offset + 2) - startOffset
 			offset = pointer
 			startOffset = pointer

@@ -165,38 +165,6 @@ func TestDecodeDNSMessage(t *testing.T) {
 	assert.Equal(t, testMessage, result)
 }
 
-func TestDoesWordHasAPointer(t *testing.T) {
-	tests := []struct {
-		word     []byte
-		expected bool
-	}{
-		{[]byte{0xC0, 0x00}, true},  // 1100 0000 0000 0000 - Both bits 15 and 14 are set
-		{[]byte{0x80, 0x00}, false}, // 1000 0000 0000 0000 - Only bit 15 is set
-		{[]byte{0x40, 0x00}, false}, // 0100 0000 0000 0000 - Only bit 14 is set
-		{[]byte{0x00, 0x00}, false}, // 0000 0000 0000 0000 - Neither bit 15 nor 14 is set
-		{[]byte{0xC0, 0x01}, true},  // 1100 0000 0000 0001 - Both bits 15 and 14 are set
-	}
-
-	for _, test := range tests {
-		result, err := doesWordHasAPointer(test.word)
-		assert.NoError(t, err)
-		assert.Equal(t, test.expected, result, "For word %v, expected %v, but got %v --- binary test value - %b", test.word, test.expected, result, test.word)
-	}
-
-	// error case
-	tests = []struct {
-		word     []byte
-		expected bool
-	}{
-		{[]byte{0xC0, 0x00, 0x00}, false},
-	}
-
-	for _, test := range tests {
-		_, err := doesWordHasAPointer(test.word)
-		assert.Error(t, err)
-	}
-}
-
 func TestExtractPointer(t *testing.T) {
 	tests := []struct {
 		input    []byte
@@ -205,10 +173,11 @@ func TestExtractPointer(t *testing.T) {
 		{[]byte{0xC0, 0x00}, 0},  // 1100 0000 0000 0000 - after clearing pointer bits -> 0000 0000 0000 0000
 		{[]byte{0xC0, 0x01}, 1},  // 1100 0000 0000 0001 - after clearing pointer bits -> 0000 0000 0000 0001
 		{[]byte{0xC0, 0x10}, 16}, // 1100 0000 0001 0000 - after clearing pointer bits -> 0000 0000 0001 0000
-		{[]byte{0x00, 0x00}, 0},  // 0000 0000 0000 0000 - after clearing pointer bits -> 0000 0000 0000 0000
-		// the top bits are cleared and there shouldn't be any value returned
-		{[]byte{0x80, 0x00}, 0}, // 1000 0000 0000 0000 - after clearing pointer bits -> 1000 0000 0000 0000
-		{[]byte{0x40, 0x00}, 0}, // 0100 0000 0000 0000 - after clearing pointer bits -> 0100 0000 0000 0000
+
+		// not a pointer
+		{[]byte{0x00, 0x00}, -1}, // 0000 0000 0000 0000 - after clearing pointer bits -> 0000 0000 0000 0000
+		{[]byte{0x80, 0x00}, -1}, // 1000 0000 0000 0000 - after clearing pointer bits -> 0000 0000 0000 0000
+		{[]byte{0x40, 0x00}, -1}, // 0100 0000 0000 0000 - after clearing pointer bits -> 0000 0000 0000 0000
 	}
 
 	for _, test := range tests {
