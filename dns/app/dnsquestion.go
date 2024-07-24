@@ -31,7 +31,7 @@ func (question *DNSQuestion) Decode(messageBytes []byte, offset int) int {
 	offset += offsetName
 	question.Name = name
 
-	//TODO: this logic currently required specific order and can be error prone
+	//TODO: this logic currently requires specific order and can be error prone
 	question.Type, offset = ReadUint16(messageBytes, offset)
 	question.Class, offset = ReadUint16(messageBytes, offset)
 

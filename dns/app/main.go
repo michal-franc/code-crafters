@@ -6,6 +6,8 @@ import (
 	"net"
 )
 
+// TODO: revamp this whole code
+// TODO: check if all the err make sense in all structs and logic
 func main() {
 
 	var args struct {

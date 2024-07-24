@@ -44,7 +44,7 @@ func (answer *DNSAnswer) Decode(messageBytes []byte, offset int) int {
 	offset += offsetName
 	answer.Name = name
 
-	//TODO: this logic currently required specific order and can be error prone
+	//TODO: this logic currently requires specific order and can be error prone
 	answer.Type, offset = ReadUint16(messageBytes, offset)
 	answer.Class, offset = ReadUint16(messageBytes, offset)
 	answer.TTL, offset = ReadUint32(messageBytes, offset)

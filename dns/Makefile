@@ -8,3 +8,6 @@ run: build
 
 run-resolver: build
 	sudo ./bin/server --resolver 8.8.8.8:53
+
+test:
+	go test -v -cover ./...
