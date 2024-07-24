@@ -26,6 +26,37 @@ func TestNameEncoder(t *testing.T) {
 	}
 }
 
+// Tests for ipV4Encoder function
+func TestIpV4Encoder(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []byte
+		err      bool
+	}{
+		{"192.168.1.1", []byte{192, 168, 1, 1}, false},
+		{"255.255.255.255", []byte{255, 255, 255, 255}, false},
+		{"0.0.0.0", []byte{0, 0, 0, 0}, false},
+		{"10.0.0.1", []byte{10, 0, 0, 1}, false},
+		{"256.100.50.25", nil, true}, // Value out of range
+		{"192.168.1", nil, true},     // Not enough parts
+		{"192.168.1.1.1", nil, true}, // Too many parts
+		{"192.168.1.a", nil, true},   // Non-numeric part
+		{"192.-1.1.1", nil, true},    // Negative value
+		{"192.168.1.300", nil, true}, // Out of range part
+	}
+
+	for _, test := range tests {
+		result, err := ipV4Encoder(test.input)
+		if test.err {
+			assert.Error(t, err, "For input %q, expected error: %v, but got: %v", test.input, test.err, err)
+		} else {
+			assert.NoError(t, err)
+		}
+
+		assert.Equal(t, test.expected, result, "For input %q, expected %v, but got %v", test.input, test.expected, result)
+	}
+}
+
 func TestQuestionNameDecoder(t *testing.T) {
 	// example from https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4
 	name1 := "\x01f\x03isi\x04arpa\x00" // not compressed

@@ -179,19 +179,23 @@ func nameEncoder(name string) []byte {
 // example 8.8.8.8 -> 8888
 // we effectively just remove `dot`
 // but we cant just encode 8888 in byte it has be 8 8 8 8 each in 1 byte that is why simple algorithm to `remove .` won't work here
-
-// TODO: add more tests also on boundaries
-// TODO: add logic to validate the ip before encoding
 func ipV4Encoder(ip string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	split := strings.Split(ip, ".")
 
+	if len(split) != 4 {
+		return nil, fmt.Errorf("invalid IP address ip: %s", ip)
+	}
+
 	for _, v := range split {
 		value, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
-			fmt.Println("ipV4Encoder failure when creating value")
-			return nil, nil
+			return nil, fmt.Errorf("failure when parsing sub value %v in ip: %s", v, ip)
+		}
+
+		if value > 255 || value < 0 {
+			return nil, fmt.Errorf("the parsed value is not within the the ipv4 limit - value: %v in ip %s", value, ip)
 		}
 
 		// uint8 is important here as the value has to  fit into 1 byte
