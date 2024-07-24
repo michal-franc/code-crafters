@@ -74,6 +74,8 @@ func (message *DNSMessage) Decode(messageBytes []byte) error {
 // in the rfc - https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4
 // if last two bits are 11 then its a pointer
 func doesWordHasAPointer(word []byte) bool {
+	//TODO: add err if word is more than 2 bytes
+	//TODO: add unit tests
 	w := binary.BigEndian.Uint16(word)
 	return hasBit(w, 15) && hasBit(w, 14)
 }
@@ -154,9 +156,12 @@ func nameExtract(data []byte, startOffset int) ([]byte, int) {
 // then for each splitted item create encoded value and add to buf
 // encoded value example de => \x02de --- length 2 and then characters (or runes)
 // then emit buff adding \x00 at the end - this is to indicate the end of label - important for decoding!
-// TODO: add more tests also on boundaries
-// TODO: add logic to validate if the limits are met and kept in the boundaries
 func nameEncoder(name string) []byte {
+	if name == "" {
+		// we need to return 0 as this is indicating the end of the name
+		return []byte{0x00}
+	}
+
 	buf := new(bytes.Buffer)
 	split := strings.Split(name, ".")
 	for _, v := range split {
@@ -177,7 +182,7 @@ func nameEncoder(name string) []byte {
 
 // TODO: add more tests also on boundaries
 // TODO: add logic to validate the ip before encoding
-func ipEncoder(ip string) ([]byte, error) {
+func ipV4Encoder(ip string) ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	split := strings.Split(ip, ".")
@@ -185,13 +190,13 @@ func ipEncoder(ip string) ([]byte, error) {
 	for _, v := range split {
 		value, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
-			fmt.Println("ipEncoder failure when creating value")
+			fmt.Println("ipV4Encoder failure when creating value")
 			return nil, nil
 		}
 
 		// uint8 is important here as the value has to  fit into 1 byte
 		if err := binary.Write(buf, binary.BigEndian, uint8(value)); err != nil {
-			fmt.Println("ipEncoder failure when writing value to buffer")
+			fmt.Println("ipV4Encoder failure when writing value to buffer")
 			return nil, err
 		}
 	}

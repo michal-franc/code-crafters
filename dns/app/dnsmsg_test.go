@@ -7,13 +7,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestQuestionNameEncoder(t *testing.T) {
-	given := "google.com"
-	expected := "\x06google\x03com\x00"
+func TestNameEncoder(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []byte
+	}{
+		{"www.example.com", []byte{3, 'w', 'w', 'w', 7, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 3, 'c', 'o', 'm', 0}},
+		{"example.com", []byte{7, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 3, 'c', 'o', 'm', 0}},
+		{"com", []byte{3, 'c', 'o', 'm', 0}},
+		{"", []byte{0}},
+		{"a.b.c", []byte{1, 'a', 1, 'b', 1, 'c', 0}},
+		{"sub.domain.example.com", []byte{3, 's', 'u', 'b', 6, 'd', 'o', 'm', 'a', 'i', 'n', 7, 'e', 'x', 'a', 'm', 'p', 'l', 'e', 3, 'c', 'o', 'm', 0}},
+	}
 
-	result := nameEncoder(given)
-
-	assert.Equal(t, expected, string(result))
+	for _, test := range tests {
+		result := nameEncoder(test.input)
+		assert.Equal(t, test.expected, result, "For input %q, expected %v, but got %v", test.input, test.expected, result)
+	}
 }
 
 func TestQuestionNameDecoder(t *testing.T) {
@@ -50,7 +60,7 @@ func TestAnswerIpEncoder(t *testing.T) {
 	given := "8.8.8.8"
 	expected := []byte{0x8, 0x8, 0x8, 0x8}
 
-	result, err := ipEncoder(given)
+	result, err := ipV4Encoder(given)
 	if err != nil {
 		t.Error(err)
 	}
@@ -61,7 +71,7 @@ func TestAnswerIpEncoder(t *testing.T) {
 func TestDecodeDNSMessage(t *testing.T) {
 
 	nameEncoded := nameEncoder("google.com")
-	ipEncoded, err := ipEncoder("8.8.8.8")
+	ipEncoded, err := ipV4Encoder("8.8.8.8")
 	if err != nil {
 		t.Error("Error while creating encoded ip", err)
 	}
@@ -138,4 +148,42 @@ func TestDecodeDNSMessage(t *testing.T) {
 	assert.Equal(t, 2, len(result.Answers))
 	assert.Equal(t, 2, len(result.Questions))
 	assert.Equal(t, testMessage, result)
+}
+
+func TestDoesWordHasAPointer(t *testing.T) {
+	tests := []struct {
+		word     []byte
+		expected bool
+	}{
+		{[]byte{0xC0, 0x00}, true},  // 1100 0000 0000 0000 - Both bits 15 and 14 are set
+		{[]byte{0x80, 0x00}, false}, // 1000 0000 0000 0000 - Only bit 15 is set
+		{[]byte{0x40, 0x00}, false}, // 0100 0000 0000 0000 - Only bit 14 is set
+		{[]byte{0x00, 0x00}, false}, // 0000 0000 0000 0000 - Neither bit 15 nor 14 is set
+		{[]byte{0xC0, 0x01}, true},  // 1100 0000 0000 0001 - Both bits 15 and 14 are set
+	}
+
+	for _, test := range tests {
+		result := doesWordHasAPointer(test.word)
+		assert.Equal(t, test.expected, result, "For word %v, expected %v, but got %v --- binary test value - %b", test.word, test.expected, result, test.word)
+	}
+}
+
+func TestExtractPointer(t *testing.T) {
+	tests := []struct {
+		input    []byte
+		expected int
+	}{
+		{[]byte{0xC0, 0x00}, 0},  // 1100 0000 0000 0000 - after clearing pointer bits -> 0000 0000 0000 0000
+		{[]byte{0xC0, 0x01}, 1},  // 1100 0000 0000 0001 - after clearing pointer bits -> 0000 0000 0000 0001
+		{[]byte{0xC0, 0x10}, 16}, // 1100 0000 0001 0000 - after clearing pointer bits -> 0000 0000 0001 0000
+		{[]byte{0x00, 0x00}, 0},  // 0000 0000 0000 0000 - after clearing pointer bits -> 0000 0000 0000 0000
+		// the top bits are cleared and there shouldn't be any value returned
+		{[]byte{0x80, 0x00}, 0}, // 1000 0000 0000 0000 - after clearing pointer bits -> 1000 0000 0000 0000
+		{[]byte{0x40, 0x00}, 0}, // 0100 0000 0000 0000 - after clearing pointer bits -> 0100 0000 0000 0000
+	}
+
+	for _, test := range tests {
+		result := extractPointer(test.input)
+		assert.Equal(t, test.expected, result, "For input %v, expected %d, but got %d", test.input, test.expected, result)
+	}
 }

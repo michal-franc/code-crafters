@@ -83,7 +83,7 @@ func TestDNSAnswerWithNameEncoding(t *testing.T) {
 
 func TestDNSAnswerWithDataEncoding(t *testing.T) {
 
-	testData, err := ipEncoder("8.8.8.8")
+	testData, err := ipV4Encoder("8.8.8.8")
 	assert.NoError(t, err)
 
 	answer := DNSAnswer{
@@ -105,7 +105,7 @@ func TestDNSAnswerWithDataEncoding(t *testing.T) {
 }
 
 func TestDNSAnswerEncodeDecode(t *testing.T) {
-	testData, err := ipEncoder("8.8.8.8")
+	testData, err := ipV4Encoder("8.8.8.8")
 	assert.NoError(t, err)
 
 	answer := DNSAnswer{

@@ -69,7 +69,7 @@ func main() {
 			fmt.Println("couldnt decode message:", err)
 		}
 
-		ipEncoded, err := ipEncoder("8.8.8.8")
+		ipEncoded, err := ipV4Encoder("8.8.8.8")
 		if err != nil {
 			fmt.Println("couldnt encode answer data:", err)
 		}
