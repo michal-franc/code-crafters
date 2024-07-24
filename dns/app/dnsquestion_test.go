@@ -78,7 +78,9 @@ func TestDNSQuestionEncodeDecode(t *testing.T) {
 	}
 
 	decodedQuestion := DNSQuestion{}
-	_ = decodedQuestion.Decode(questionEncoded, 0)
+	_, err = decodedQuestion.Decode(questionEncoded, 0)
+
+	assert.NoError(t, err)
 
 	assert.Equal(t, question, decodedQuestion)
 }

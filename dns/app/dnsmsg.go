@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -58,13 +57,19 @@ func (message *DNSMessage) Decode(messageBytes []byte) error {
 	offset := 12
 	for range message.Header.QDCOUNT {
 		question := DNSQuestion{}
-		offset = question.Decode(messageBytes, offset)
+		offset, err = question.Decode(messageBytes, offset)
+		if err != nil {
+			return fmt.Errorf("failure in decoding message on decoding question: %e", err)
+		}
 		message.Questions = append(message.Questions, question)
 	}
 
 	for range message.Header.ANCOUNT {
 		answer := DNSAnswer{}
-		offset = answer.Decode(messageBytes, offset)
+		offset, err = answer.Decode(messageBytes, offset)
+		if err != nil {
+			return fmt.Errorf("failure in decoding message on decoding answer: %e", err)
+		}
 		message.Answers = append(message.Answers, answer)
 	}
 
@@ -73,15 +78,23 @@ func (message *DNSMessage) Decode(messageBytes []byte) error {
 
 // in the rfc - https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4
 // if last two bits are 11 then its a pointer
-func doesWordHasAPointer(word []byte) bool {
-	//TODO: add err if word is more than 2 bytes
-	//TODO: add unit tests
+func doesWordHasAPointer(word []byte) (bool, error) {
+
+	if len(word) != 2 {
+		return false, fmt.Errorf("provided word is not 2 bytes in size unable to proceed")
+	}
+
 	w := binary.BigEndian.Uint16(word)
-	return hasBit(w, 15) && hasBit(w, 14)
+	return hasBit(w, 15) && hasBit(w, 14), nil
 }
 
-func extractPointer(b []byte) int {
-	w := binary.BigEndian.Uint16(b)
+func extractPointer(word []byte) (int, error) {
+
+	if len(word) != 2 {
+		return -1, fmt.Errorf("provided word is not 2 bytes in size unable to proceed to extract pointer")
+	}
+
+	w := binary.BigEndian.Uint16(word)
 
 	// generates 1100 0000 0000 0000
 	mask := 11 << 14
@@ -92,7 +105,7 @@ func extractPointer(b []byte) int {
 	// which is the actuall offset value
 	w &^= uint16(mask)
 
-	return int(w)
+	return int(w), nil
 }
 
 // Will find a name in the byte array
@@ -100,25 +113,30 @@ func extractPointer(b []byte) int {
 // returns
 // - byte representation of name
 // - offset by which one should shift the bytes
-
-// TODO: there has to be a better algorithm here
-func nameExtract(data []byte, startOffset int) ([]byte, int) {
-	// names are encoded by
-	// | length byte | x* bytes containg the characters each character byte |
-
+func nameExtract(data []byte, startOffset int) ([]byte, int, error) {
 	offset := startOffset
 	lengthOfLabelSection := 0
 	hasPointer := false
 	buf := new(bytes.Buffer)
+
 	// find the length of the name by counting offset in bytes by traversing  the encoded name
 	// it reads the length adds it to offset until if finds 0 value which indicates the end of the encoded name
+
 	for {
 		word := data[offset : offset+2]
-		isPointer := doesWordHasAPointer(word)
+		isPointer, err := doesWordHasAPointer(word)
+		if err != nil {
+			return nil, 0, fmt.Errorf("name extraction failed: %e", err)
+		}
+
 		if isPointer {
 			buf.Write(data[startOffset:offset])
 			// by rfc the pointer is a 16 bit word (2 bytes)
-			pointer := extractPointer(word)
+			pointer, err := extractPointer(word)
+			if err != nil {
+				return nil, 0, fmt.Errorf("name extraction failed: %e", err)
+			}
+
 			lengthOfLabelSection = (offset + 2) - startOffset
 			offset = pointer
 			startOffset = pointer
@@ -144,12 +162,11 @@ func nameExtract(data []byte, startOffset int) ([]byte, int) {
 
 		// this is just a precatuion so we dont create infinite loop
 		if offset > len(data) {
-			//TODO: more gracefull shutdown maybe return err
-			log.Fatal("CRASH: while decoding DNS message moved past the messageBytes bytes count")
+			return nil, 0, fmt.Errorf("name extraction failed: offset moved past the messagesBytes bytes count indicating some bug in the loop")
 		}
 	}
 
-	return buf.Bytes(), lengthOfLabelSection
+	return buf.Bytes(), lengthOfLabelSection, nil
 }
 
 // split by .
@@ -200,8 +217,7 @@ func ipV4Encoder(ip string) ([]byte, error) {
 
 		// uint8 is important here as the value has to  fit into 1 byte
 		if err := binary.Write(buf, binary.BigEndian, uint8(value)); err != nil {
-			fmt.Println("ipV4Encoder failure when writing value to buffer")
-			return nil, err
+			return nil, fmt.Errorf("failure when writing value to buffer")
 		}
 	}
 

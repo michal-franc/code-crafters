@@ -124,7 +124,8 @@ func TestDNSAnswerEncodeDecode(t *testing.T) {
 	}
 
 	decodedAnswer := DNSAnswer{}
-	_ = decodedAnswer.Decode(answerEncoded, 0)
+	_, err = decodedAnswer.Decode(answerEncoded, 0)
+	assert.NoError(t, err)
 
 	assert.Equal(t, answer, decodedAnswer)
 }

@@ -39,8 +39,11 @@ func (answer *DNSAnswer) Encode() ([]byte, error) {
 }
 
 // Answer has dynamic sized fields like Name which require to read it step by step
-func (answer *DNSAnswer) Decode(messageBytes []byte, offset int) int {
-	name, offsetName := nameExtract(messageBytes, offset)
+func (answer *DNSAnswer) Decode(messageBytes []byte, offset int) (int, error) {
+	name, offsetName, err := nameExtract(messageBytes, offset)
+	if err != nil {
+		return -1, err
+	}
 	offset += offsetName
 	answer.Name = name
 
@@ -53,5 +56,5 @@ func (answer *DNSAnswer) Decode(messageBytes []byte, offset int) int {
 	answer.Data = messageBytes[offset : offset+4]
 	offset += 4
 
-	return offset
+	return offset, nil
 }

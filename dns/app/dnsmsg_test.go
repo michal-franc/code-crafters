@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,10 +73,12 @@ func TestNameExtract(t *testing.T) {
 
 	startOffset := 0
 	var result []byte
+	var err error
 
 	// This test assumes that tests struct order is stable
 	for _, test := range tests {
-		result, startOffset = nameExtract(data, startOffset)
+		result, startOffset, err = nameExtract(data, startOffset)
+		assert.NoError(t, err)
 		assert.Equal(t, test.expected, result)
 	}
 }
@@ -148,7 +149,7 @@ func TestDecodeDNSMessage(t *testing.T) {
 
 	testMessageEncoded, err := testMessage.Encode()
 	if err != nil {
-		fmt.Println("Failed to encode response:", err)
+		t.Error("Failed to encode response:", err)
 	}
 
 	result := DNSMessage{}
@@ -177,8 +178,22 @@ func TestDoesWordHasAPointer(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := doesWordHasAPointer(test.word)
+		result, err := doesWordHasAPointer(test.word)
+		assert.NoError(t, err)
 		assert.Equal(t, test.expected, result, "For word %v, expected %v, but got %v --- binary test value - %b", test.word, test.expected, result, test.word)
+	}
+
+	// error case
+	tests = []struct {
+		word     []byte
+		expected bool
+	}{
+		{[]byte{0xC0, 0x00, 0x00}, false},
+	}
+
+	for _, test := range tests {
+		_, err := doesWordHasAPointer(test.word)
+		assert.Error(t, err)
 	}
 }
 
@@ -197,7 +212,21 @@ func TestExtractPointer(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := extractPointer(test.input)
+		result, err := extractPointer(test.input)
+		assert.NoError(t, err)
 		assert.Equal(t, test.expected, result, "For input %v, expected %d, but got %d", test.input, test.expected, result)
+	}
+
+	// error case
+	tests = []struct {
+		input    []byte
+		expected int
+	}{
+		{[]byte{0xC0, 0x00, 0x00}, -1}, // 1100 0000 0000 0000 - after clearing pointer bits -> 0000 0000 0000 0000
+	}
+
+	for _, test := range tests {
+		_, err := extractPointer(test.input)
+		assert.Error(t, err)
 	}
 }

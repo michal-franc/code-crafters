@@ -26,8 +26,12 @@ func (question *DNSQuestion) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (question *DNSQuestion) Decode(messageBytes []byte, offset int) int {
-	name, offsetName := nameExtract(messageBytes, offset)
+func (question *DNSQuestion) Decode(messageBytes []byte, offset int) (int, error) {
+	name, offsetName, err := nameExtract(messageBytes, offset)
+	if err != nil {
+		return -1, err
+	}
+
 	offset += offsetName
 	question.Name = name
 
@@ -35,5 +39,5 @@ func (question *DNSQuestion) Decode(messageBytes []byte, offset int) int {
 	question.Type, offset = ReadUint16(messageBytes, offset)
 	question.Class, offset = ReadUint16(messageBytes, offset)
 
-	return offset
+	return offset, nil
 }
