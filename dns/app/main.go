@@ -5,12 +5,15 @@ import (
 	"github.com/alexflint/go-arg"
 	"log"
 	"net"
+	"time"
 )
 
 var args struct {
 	Resolver string
 }
 
+// TODO: use go channells and support multiple callers?
+// TODO: Simulating retry logic by using toxiproxy: - https://github.com/Shopify/toxiproxy - this will require docker setup ideally
 func main() {
 	var udpConnResolver net.Conn
 	var err error
@@ -34,7 +37,7 @@ func main() {
 			log.Fatal("failed to dial resolver: ", err)
 		}
 
-		fmt.Println("Dial to resolver sucesfull:  ", args.Resolver)
+		fmt.Println("Dial to resolver successful:  ", args.Resolver)
 	}
 
 	fmt.Println("Server configured to listen: ", "127.0.0.1:2053")
@@ -136,8 +139,27 @@ func contactResolver(receivedMessage DNSMessage, udpConnResolver net.Conn) ([]DN
 		sizeRes, err := udpConnResolver.Read(buf)
 		if err != nil {
 			fmt.Println("error receiving data:", err)
-			//TODO: retry logic
-			//TODO: if retry failed return err
+
+			retries := 0
+			success := false
+			maxRetries := 5
+			retryDelay := time.Duration(1000)
+			for retries < maxRetries {
+				fmt.Println("retrying the call to resolver: ", err)
+				time.Sleep(retryDelay)
+				sizeRes, err = udpConnResolver.Read(buf)
+				if err == nil {
+					fmt.Println("retrying successful: ", err)
+					success = true
+					break
+				}
+				retries++
+			}
+			if !success {
+				fmt.Println("failed to receive data after retries:", err)
+				break
+			}
+
 			break
 		}
 
