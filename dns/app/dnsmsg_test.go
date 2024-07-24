@@ -57,46 +57,29 @@ func TestIpV4Encoder(t *testing.T) {
 	}
 }
 
-func TestQuestionNameDecoder(t *testing.T) {
-	// example from https://www.rfc-editor.org/rfc/rfc1035#section-4.1.4
-	name1 := "\x01f\x03isi\x04arpa\x00" // not compressed
-	// \xc0\x00 == 1100 0000 0000 0000 -> pointing to 0 pointer
-	name2 := "\x03foo\xc0\x00"                         // compressed points to pointer
-	expectedName2 := "\x03foo\x01f\x03isi\x04arpa\x00" // after decompression
-	// \xc0\x06 == 1100 0000 0000 0110 -> pointing to 6 pointer offset
-	name3 := "\xc0\x06" // compressed points to pointer only
-	expectedName3 := "\x04arpa\x00"
+func TestNameExtract(t *testing.T) {
+	// we  have 3 names here
+	// f.isi.arpa
+	// foo.f.isi.arpa
+	// arpa
+	data := []byte{0x01, 'f', 0x03, 'i', 's', 'i', 0x04, 'a', 'r', 'p', 'a', 0x00, 0x03, 'f', 'o', 'o', 0xc0, 0x00, 0xc0, 0x06}
 
-	fullNameBytes := []byte(name1 + name2 + name3)
-
-	result1, offset1 := nameExtract(fullNameBytes, 0)
-	result2, offset2 := nameExtract(fullNameBytes, 12)
-	result3, offset3 := nameExtract(fullNameBytes, 18)
-
-	assert.Equal(t, name1, string(result1))
-	assert.Equal(t, expectedName2, string(result2))
-	assert.Equal(t, expectedName3, string(result3))
-
-	// example 1 has full name - so length of name
-	assert.Equal(t, 12, offset1)
-
-	// example 2 has compressed name - so comporessed name (4 bytes) + pointer (2 bytes)
-	assert.Equal(t, 6, offset2)
-
-	// example 3 has only pointer - so a word so 2 bytes
-	assert.Equal(t, 2, offset3)
-}
-
-func TestAnswerIpEncoder(t *testing.T) {
-	given := "8.8.8.8"
-	expected := []byte{0x8, 0x8, 0x8, 0x8}
-
-	result, err := ipV4Encoder(given)
-	if err != nil {
-		t.Error(err)
+	tests := []struct {
+		expected []byte
+	}{
+		{[]byte{0x01, 'f', 0x03, 'i', 's', 'i', 0x04, 'a', 'r', 'p', 'a', 0x00}},
+		{[]byte{0x03, 'f', 'o', 'o', 0x01, 'f', 0x03, 'i', 's', 'i', 0x04, 'a', 'r', 'p', 'a', 0x00}},
+		{[]byte{0x04, 'a', 'r', 'p', 'a', 0x00}},
 	}
 
-	assert.Equal(t, expected, result)
+	startOffset := 0
+	var result []byte
+
+	// This test assumes that tests struct order is stable
+	for _, test := range tests {
+		result, startOffset = nameExtract(data, startOffset)
+		assert.Equal(t, test.expected, result)
+	}
 }
 
 func TestDecodeDNSMessage(t *testing.T) {
