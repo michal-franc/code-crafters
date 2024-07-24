@@ -83,6 +83,17 @@ func TestNameExtract(t *testing.T) {
 	}
 }
 
+// This is a test to verify if the logic will break with error and not let the infinite loop
+// 100 pointers assumed ass too much and indication that someone is trying to DDOS us
+func TestNameExtractWith100Pointers(t *testing.T) {
+
+	// special name that will lead to infinite loop
+	testData := []byte{0xc0, 0x00, 0xc0}
+
+	_, _, err := nameExtract(testData, 0)
+	assert.Error(t, err)
+}
+
 func TestDecodeDNSMessage(t *testing.T) {
 
 	nameEncoded := nameEncoder("google.com")

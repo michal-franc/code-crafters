@@ -114,10 +114,16 @@ func nameExtract(data []byte, startOffset int) ([]byte, int, error) {
 	hasPointer := false
 	buf := new(bytes.Buffer)
 
+	pointerCounter := 0
+	maxPointerJumps := 100
+
 	// find the length of the name by counting offset in bytes by traversing  the encoded name
 	// it reads the length adds it to offset until if finds 0 value which indicates the end of the encoded name
 
 	for {
+		if pointerCounter > maxPointerJumps {
+			return nil, -1, fmt.Errorf("reached maximum %d pointer counter, malicious dns query or a mistake somewhere", maxPointerJumps)
+		}
 		// we check if we  have found a label ending with pointer
 		// This  has to be a first check as pointer has a special structure with two bits set to one
 		// if this wouldnt be the first check pointer could be mistaken to be naext label size
@@ -132,6 +138,7 @@ func nameExtract(data []byte, startOffset int) ([]byte, int, error) {
 		// \0x03f00\x0c
 		// \x0c is the pointer with the length 0
 		if pointer != -1 {
+			pointerCounter++
 			// everything up to the pointer is start of the message so we need to write it
 			buf.Write(data[startOffset:offset])
 
