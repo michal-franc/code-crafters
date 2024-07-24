@@ -103,7 +103,7 @@ func main() {
 
 				newMessageToResolver.Header.QDCOUNT = 1
 
-				forwardedMessage, err := newMessageToResolver.encode()
+				forwardedMessage, err := newMessageToResolver.Encode()
 				if err != nil {
 					fmt.Println("Failed to encode proxy message:", err)
 				}
@@ -166,7 +166,7 @@ func main() {
 				fmt.Println("Failed to set rcode:", err)
 			}
 
-			response, err := responseMessage.encode()
+			response, err := responseMessage.Encode()
 
 			if err != nil {
 				fmt.Println("Failed to encode response:", err)

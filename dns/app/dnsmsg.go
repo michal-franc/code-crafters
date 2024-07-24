@@ -15,7 +15,7 @@ type DNSMessage struct {
 	Answers   []DNSAnswer
 }
 
-func (message *DNSMessage) encode() ([]byte, error) {
+func (message *DNSMessage) Encode() ([]byte, error) {
 	buf := new(bytes.Buffer)
 
 	encodedHeader, err := message.Header.Encode()

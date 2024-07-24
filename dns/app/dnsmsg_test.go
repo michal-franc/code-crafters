@@ -122,7 +122,7 @@ func TestDecodeDNSMessage(t *testing.T) {
 		t.Error("Error while setting OPCode", err)
 	}
 
-	testMessageEncoded, err := testMessage.encode()
+	testMessageEncoded, err := testMessage.Encode()
 	if err != nil {
 		fmt.Println("Failed to encode response:", err)
 	}

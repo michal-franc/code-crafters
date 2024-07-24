@@ -103,3 +103,28 @@ func TestDNSAnswerWithDataEncoding(t *testing.T) {
 	expectedNameEncoding = append(expectedNameEncoding, []byte{8, 8, 8, 8}...) // ... here will change the array to single elements
 	assert.Equal(t, answerEncoded, expectedNameEncoding, "Answer with data encoded")
 }
+
+func TestDNSAnswerEncodeDecode(t *testing.T) {
+	testData, err := ipEncoder("8.8.8.8")
+	assert.NoError(t, err)
+
+	answer := DNSAnswer{
+		Name:   nameEncoder("mfranc.com"),
+		Type:   1,
+		Class:  5,
+		TTL:    1000,
+		Length: uint16(len(testData)),
+		Data:   testData,
+	}
+
+	answerEncoded, err := answer.Encode()
+
+	if err != nil {
+		t.Error("Error while encoding DNS Message", err)
+	}
+
+	decodedAnswer := DNSAnswer{}
+	_ = decodedAnswer.Decode(answerEncoded, 0)
+
+	assert.Equal(t, answer, decodedAnswer)
+}

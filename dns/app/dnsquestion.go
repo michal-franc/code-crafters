@@ -26,16 +26,14 @@ func (question *DNSQuestion) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (q *DNSQuestion) Decode(messageBytes []byte, offset int) int {
+func (question *DNSQuestion) Decode(messageBytes []byte, offset int) int {
 	name, offsetName := nameExtract(messageBytes, offset)
 	offset += offsetName
-	q.Name = name
+	question.Name = name
 
-	q.Type = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
-	offset += 2
-
-	q.Class = binary.BigEndian.Uint16(messageBytes[offset : offset+2])
-	offset += 2
+	//TODO: this logic currently required specific order and can be error prone
+	question.Type, offset = ReadUint16(messageBytes, offset)
+	question.Class, offset = ReadUint16(messageBytes, offset)
 
 	return offset
 }

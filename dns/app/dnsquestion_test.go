@@ -63,3 +63,22 @@ func TestDNSQuestionWithStaticVariablesEncode(t *testing.T) {
 
 	assert.Equal(t, questionEncoded, []byte{0, 0, 0, 1}, "Question with class IN failed")
 }
+
+func TestDNSQuestionEncodeDecode(t *testing.T) {
+	question := DNSQuestion{
+		Name:  nameEncoder("mfranc.com"),
+		Type:  1,
+		Class: 5,
+	}
+
+	questionEncoded, err := question.Encode()
+
+	if err != nil {
+		t.Error("Error while encoding DNS Message", err)
+	}
+
+	decodedQuestion := DNSQuestion{}
+	_ = decodedQuestion.Decode(questionEncoded, 0)
+
+	assert.Equal(t, question, decodedQuestion)
+}

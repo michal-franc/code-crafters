@@ -25,6 +25,7 @@ func (h *DNSHeader) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// header has all the fields as fixed size and we  can just use binary Read
 func (h *DNSHeader) Decode(messageBytes []byte) error {
 	// header uses only first 12 bytes
 	headerBuffer := bytes.NewBuffer(messageBytes[0:12])
