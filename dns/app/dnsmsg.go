@@ -118,31 +118,41 @@ func nameExtract(data []byte, startOffset int) ([]byte, int, error) {
 	// it reads the length adds it to offset until if finds 0 value which indicates the end of the encoded name
 
 	for {
-		word := data[offset : offset+2]
-		pointer, err := extractPointer(word)
+		// we check if we  have found a label ending with pointer
+		// This  has to be a first check as pointer has a special structure with two bits set to one
+		// if this wouldnt be the first check pointer could be mistaken to be naext label size
+		pointer, err := extractPointer(data[offset : offset+2])
 		if err != nil {
 			return nil, 0, fmt.Errorf("name extraction failed: %e", err)
 		}
 
+		// if we found pointer then we need write the label + shift the offset and move it to pointer
+
+		// example of message with pointer
+		// \0x03f00\x0c
+		// \x0c is the pointer with the length 0
 		if pointer != -1 {
 			// everything up to the pointer is start of the message so we need to write it
 			buf.Write(data[startOffset:offset])
+
+			// we need to add +2 as pointer occupies the last two bytes of the  label
 			lengthOfLabelSection = (offset + 2) - startOffset
+
+			// reset the offset to the pointer so that we can jump to a label that probably doesnt have pointer
 			offset = pointer
 			startOffset = pointer
 			hasPointer = true
+			continue
 		}
 
-		// get next byte
-		oneByte := uint16(data[offset])
+		// loop through bytes and the lenghts of labels till you reach the end or pointer
+		lengthOflabel := data[offset]
 
-		// move offset by the length
-		labelLength := int(oneByte)
-		offset += labelLength
-		// move the offset to the start of next byte
-		offset++
-		// if the next byte value is 0 then it is end
-		if labelLength == 0 {
+		// +1 here as the first byte is the lenght value so we ddont want to miss it
+		// label is | length | char | char | char ... etc
+		offset += int(lengthOflabel) + 1
+
+		if lengthOflabel == 0x00 {
 			if !hasPointer {
 				lengthOfLabelSection = offset - startOffset
 			}
